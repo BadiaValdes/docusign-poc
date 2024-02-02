@@ -46,6 +46,8 @@ export function makeDocuSignEnvelopeWorkFlow() {
       routingOrder: "2",
     };
 
+    // Routing Order en el mismo numero se entregan a la vez. En numeros consecutivos, se entregan en consecutivos
+
     // SignHere document box
 
     const signHere1: SignHere = {
