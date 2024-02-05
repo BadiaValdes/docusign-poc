@@ -1,60 +1,102 @@
-import { IDocuSignService } from "./docu-sign.interface";
-import { readFileSync } from "fs";
-import {
-  Document,
-  Signer,
-  SignHere,
-  Recipients,
-  EnvelopeDefinition,
-  EnvelopesApi,
-} from "docusign-esign";
-import { DocuSign } from "../singleton/docu-sign";
-import { IDocuSignToken } from "../interfaces/docu-sign-token.interface";
+import fs from "fs";
+import { IDocuSignService } from "../interfaces/docu-sign-service.interface";
+import { DocuSignConnector } from "../connector/docu-sign.connector";
+import { makeDocuSignEnvelope } from "../utils/envelope-creation.util";
+import { makeDocuSignEnvelopeWorkFlow } from "../utils/envelope-workflow-creation.util";
 
-export class DocuSignService implements IDocuSignService {
-    private static docuSignService: IDocuSignService;
-  private constructor() {
+class DocuSignService implements IDocuSignService {
+  public constructor() {
     console.log("Aqui");
   }
-
-  public static getDocuSignService(){
-    if(!this.docuSignService){
-        DocuSignService.docuSignService = new DocuSignService();
-    } 
-
-    return DocuSignService.docuSignService;
+  async documentDownload(documentId: string, envelopeId: string) {
+    try {
+      const envelope =
+        await DocuSignConnector.getDocuSignConnector().docuSignCreateEnvelopeApi();
+      const envelopeData = await envelope.getDocument(
+        process.env.ACCOUNT_ID,
+        envelopeId,
+        documentId,
+        null
+      );
+      // Write to disk
+      fs.writeFile(
+        "dat.pdf",
+        new Buffer(envelopeData, "binary"),
+        function (err) {
+          if (err) console.log("Error: " + err);
+        }
+      );
+      return envelopeData;
+    } catch (e) {
+      console.log(e);
+    }
   }
-
-  async docuSignCreateEnvelopeApi(): Promise<EnvelopesApi> {
-    const token = await this.getDocuSignToken(); // Get token
-    this.docuSignSetToken(token); // Add token to docuSign instance
-    return new EnvelopesApi(DocuSign.getDocuSign());
+  async getDocumentList(envelopeId: string): Promise<any> {
+    try {
+      const envelopId = envelopeId;
+      const envelope =
+        await DocuSignConnector.getDocuSignConnector().docuSignCreateEnvelopeApi();
+      const envelopeData = await envelope.listDocuments(
+        process.env.ACCOUNT_ID,
+        envelopId
+      );
+      return envelopeData;
+    } catch (e) {
+      console.log(e);
+    }
   }
-
-  async getDocuSignToken(): Promise<IDocuSignToken> {
-    const USER_ID = process.env.USER_ID; // user id
-    const SCOPE = ["signature"]; // Scope for petition
-    const JWT_LIFE_SEC = 10 * 60; // 10 minutes
-    const INTEGRATION_KEY = process.env.INTEGRATION_KEY; // integration key
-
-    const result = await DocuSign.getDocuSign().requestJWTUserToken(
-      INTEGRATION_KEY,
-      USER_ID,
-      SCOPE,
-      readFileSync("./private.key"),
-      JWT_LIFE_SEC
-    );
-
-    return {
-      accessToken: result.body.access_token,
-      tokenExpiration: "test",
-    };
+  async getEnvelope(envelopeId: string): Promise<any> {
+    try {
+      const envelope =
+        await DocuSignConnector.getDocuSignConnector().docuSignCreateEnvelopeApi();
+      const envelopeData = await envelope.getEnvelope(
+        process.env.ACCOUNT_ID,
+        envelopeId
+      );
+      return envelopeData;
+    } catch (e) {
+      console.log(e);
+    }
   }
+  async sendEnvelope() {
+    try {
+      const envelope =
+        await DocuSignConnector.getDocuSignConnector().docuSignCreateEnvelopeApi();
+      const envelopeData = makeDocuSignEnvelope(); // Get envelope data
 
-  private docuSignSetToken(token: any) {
-    DocuSign.getDocuSign().addDefaultHeader(
-      "Authorization",
-      "Bearer " + token.accessToken
-    ); // Add token to docuSign instance
+      const result = await envelope.createEnvelope(
+        "e930af09-7547-4903-aa70-07548f3ce795",
+        {
+          envelopeDefinition: envelopeData,
+        }
+      );
+
+      return {
+        envelopeId: result,
+      };
+    } catch (e) {
+      console.log(e);
+    }
+  }
+  async sendWithWorkFlow() {
+    try {
+      const envelope =
+        await DocuSignConnector.getDocuSignConnector().docuSignCreateEnvelopeApi();
+
+      const envelopeData = makeDocuSignEnvelopeWorkFlow(); // Get envelope data
+
+      console.log("send");
+      const result = await envelope.createEnvelope(
+        "e930af09-7547-4903-aa70-07548f3ce795",
+        {
+          envelopeDefinition: envelopeData,
+        }
+      );
+      return result;
+    } catch (e) {
+      console.log(e);
+    }
   }
 }
+
+export const docuSignService = new DocuSignService();

@@ -1,21 +1,22 @@
 import { Request, Response, Router } from "express";
 import { IRouter } from "../interfaces/router.interface";
-import { sendEnvelope } from "./controller/send-envelope";
-import { getEnvelope } from "./controller/get-envelope";
-import { documentDownload } from "./controller/download-document-envelope.controller";
-import fs from 'fs';
-import { workFlow } from "./controller/work-flow";
-import { DocuSignService } from "./service/docu-sign.service";
+import { DocuSignConnector } from "./connector/docu-sign.connector";
+import { IDocuSignController } from "./interfaces/docu-sign-controller.interface";
+import { docuSignControllerInstance } from "./controller/docu-sign.controller";
 const router = Router();
 
 class DocuSignRoutes implements IRouter {
+  private docuSignController: IDocuSignController;
+  constructor() {
+    this.docuSignController = docuSignControllerInstance;
+  }
   // eslint-disable-line
   get routes() {
-
     router.get("/auth", async (req: Request, res: Response) => {
       // eslint-disable-next-line no-useless-catch
       try {
-        const quote = await DocuSignService.getDocuSignService().getDocuSignToken();
+        const quote =
+          await DocuSignConnector.getDocuSignConnector().getDocuSignToken();
         return res.send(quote);
       } catch (err) {
         throw err;
@@ -23,46 +24,22 @@ class DocuSignRoutes implements IRouter {
     });
 
     router.get("/send", async (req: Request, res: Response) => {
-      // eslint-disable-next-line no-useless-catch
-      try {
-        const quote = await workFlow();
-        return res.send(quote);
-      } catch (err) {
-        throw err;
-      }
+      this.docuSignController.sendWithWorkFlow(req, res);
     });
 
     router.get("/envelope/:id", async (req: Request, res: Response) => {
-      // eslint-disable-next-line no-useless-catch
-      try {
-        const quote = await getEnvelope(req);
-        return res.send(quote);
-      } catch (err) {
-        throw err;
-      }
+      this.docuSignController.getEnvelope(req, res);
     });
 
     router.get(
       "/envelope/:id/documents",
       async (req: Request, res: Response) => {
-        // eslint-disable-next-line no-useless-catch
-        try {
-          const quote = await getEnvelope(req);
-          return res.send(quote);
-        } catch (err) {
-          throw err;
-        }
+        this.docuSignController.getDocumentList(req, res);
       }
     );
 
     router.post("/envelope/document", async (req: Request, res: Response) => {
-      // eslint-disable-next-line no-useless-catch
-      try {
-        const quote = await documentDownload(req);
-        return res.send(quote);
-      } catch (err) {
-        throw err;
-      }
+      this.docuSignController.documentDownload(req, res);
     });
     return router;
   }

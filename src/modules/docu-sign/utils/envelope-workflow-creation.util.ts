@@ -5,15 +5,6 @@ import {
   SignHere,
   Recipients,
   EnvelopeDefinition,
-  RecipientOption,
-  RecipientGroup,
-  ConditionalRecipientRuleFilter,
-  Checkbox,
-  ConditionalRecipientRuleCondition,
-  ConditionalRecipientRule,
-  RecipientRouting,
-  WorkflowStep,
-  Workflow,
 } from "docusign-esign";
 
 export function makeDocuSignEnvelopeWorkFlow() {

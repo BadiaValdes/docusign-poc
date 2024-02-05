@@ -1,7 +1,7 @@
 import { EnvelopesApi } from "docusign-esign";
-import { IDocuSignToken } from "../interfaces/docu-sign-token.interface";
+import { IDocuSignToken } from "./docu-sign-token.interface";
 
-export interface IDocuSignService {
+export interface IDocuSignConnector {
      docuSignCreateEnvelopeApi(): Promise<EnvelopesApi>;
      getDocuSignToken(): Promise<IDocuSignToken>;
 }
